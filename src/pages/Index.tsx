@@ -73,6 +73,10 @@ const Index = () => {
 
         if (userError) throw userError;
 
+        if (!userData) {
+          throw new Error('User data not found');
+        }
+
         toast({
           title: "Welcome back!",
           description: "Successfully logged in.",

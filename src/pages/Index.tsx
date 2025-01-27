@@ -1,18 +1,20 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import AuthForm from "@/components/auth/AuthForm";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const { toast } = useToast();
 
-  const handleLogin = async () => {
+  const handleAuth = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // We'll implement actual auth logic with Supabase later
       toast({
-        title: "Welcome back!",
-        description: "Successfully logged in.",
+        title: mode === "signin" ? "Welcome back!" : "Account created",
+        description: mode === "signin" ? "Successfully logged in." : "Your account has been created.",
       });
     } catch (error) {
       toast({
@@ -29,23 +31,26 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
-          <CardDescription>Sign in to access your dashboard</CardDescription>
+          <CardTitle className="text-2xl font-bold">
+            {mode === "signin" ? "Welcome Back" : "Create Account"}
+          </CardTitle>
+          <CardDescription>
+            {mode === "signin"
+              ? "Sign in to access your dashboard"
+              : "Sign up to create your account"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <Button
-              className="w-full"
-              onClick={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? "Loading..." : "Sign In"}
-            </Button>
+            <AuthForm mode={mode} onSubmit={handleAuth} isLoading={isLoading} />
             <div className="text-center text-sm text-gray-500">
-              Don't have an account?{" "}
-              <Button variant="link" className="p-0 h-auto font-normal">
-                Sign up
-              </Button>
+              {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
+              <button
+                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                className="text-blue-600 hover:underline font-medium"
+              >
+                {mode === "signin" ? "Sign up" : "Sign in"}
+              </button>
             </div>
           </div>
         </CardContent>

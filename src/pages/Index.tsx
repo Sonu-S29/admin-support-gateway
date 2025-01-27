@@ -15,34 +15,50 @@ const Index = () => {
     setIsLoading(true);
     try {
       if (mode === "signup") {
-        // First, create the user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // Check if user exists first
+        const { data: { user: existingUser }, error: checkError } = await supabase.auth.getUser();
+        if (existingUser) {
+          toast({
+            title: "Error",
+            description: "You are already signed in. Please sign out first.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Proceed with signup
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
 
-        if (authError) throw authError;
+        if (signUpError) {
+          if (signUpError.message === "User already registered") {
+            toast({
+              title: "Account exists",
+              description: "This email is already registered. Please sign in instead.",
+              variant: "destructive",
+            });
+            setMode("signin");
+          } else {
+            throw signUpError;
+          }
+          return;
+        }
 
-        // Check if there are any existing users
-        const { data: existingUsers, error: queryError } = await supabase
-          .from('users')
-          .select('id')
-          .limit(1);
+        if (!authData.user) {
+          throw new Error("Signup failed");
+        }
 
-        if (queryError) throw queryError;
-
-        // Determine if this should be an admin (first user) or support user
-        const isAdmin = !existingUsers || existingUsers.length === 0;
-
-        // Insert the user into our users table with the appropriate role
+        // Insert into users table
         const { error: insertError } = await supabase
           .from('users')
           .insert([
             {
-              id: authData.user?.id,
+              id: authData.user.id,
               email: email,
-              is_admin: isAdmin,
-              is_support: !isAdmin
+              is_admin: true, // First user is admin
+              is_support: false
             }
           ]);
 
@@ -50,11 +66,10 @@ const Index = () => {
 
         toast({
           title: "Account created",
-          description: `Successfully created ${isAdmin ? 'admin' : 'support'} account.`,
+          description: "Please check your email to confirm your account.",
         });
 
-        // Redirect based on role
-        navigate(isAdmin ? '/admin' : '/support');
+        // Don't navigate yet - wait for email confirmation
       } else {
         // Handle sign in
         const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
@@ -62,20 +77,31 @@ const Index = () => {
           password,
         });
 
-        if (signInError) throw signInError;
+        if (signInError) {
+          if (signInError.message === "Email not confirmed") {
+            toast({
+              title: "Email not confirmed",
+              description: "Please check your email and confirm your account before signing in.",
+              variant: "destructive",
+            });
+          } else {
+            throw signInError;
+          }
+          return;
+        }
 
-        // Get user role from users table
+        if (!user) {
+          throw new Error("Sign in failed");
+        }
+
+        // Get user role
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('is_admin')
-          .eq('id', user?.id)
-          .single();
+          .eq('id', user.id)
+          .maybeSingle();
 
         if (userError) throw userError;
-
-        if (!userData) {
-          throw new Error('User data not found');
-        }
 
         toast({
           title: "Welcome back!",
@@ -83,7 +109,7 @@ const Index = () => {
         });
 
         // Redirect based on role
-        navigate(userData.is_admin ? '/admin' : '/support');
+        navigate(userData?.is_admin ? '/admin' : '/support');
       }
     } catch (error) {
       console.error('Auth error:', error);

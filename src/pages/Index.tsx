@@ -84,6 +84,12 @@ const Index = () => {
               description: "Please check your email and confirm your account before signing in.",
               variant: "destructive",
             });
+          } else if (signInError.message === "Invalid login credentials") {
+            toast({
+              title: "Invalid credentials",
+              description: "The email or password you entered is incorrect. Please try again.",
+              variant: "destructive",
+            });
           } else {
             throw signInError;
           }

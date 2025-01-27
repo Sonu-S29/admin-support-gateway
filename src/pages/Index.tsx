@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AuthForm from "@/components/auth/AuthForm";
 import { useToast } from "@/hooks/use-toast";
@@ -7,15 +8,25 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleAuth = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // We'll implement actual auth logic with Supabase later
+      // This is a mock implementation. Replace with actual Supabase auth once connected
+      const isAdmin = email.includes('admin'); // This is just for demonstration
+      
       toast({
         title: mode === "signin" ? "Welcome back!" : "Account created",
         description: mode === "signin" ? "Successfully logged in." : "Your account has been created.",
       });
+
+      // Redirect based on user role
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/support');
+      }
     } catch (error) {
       toast({
         title: "Error",
